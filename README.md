@@ -38,15 +38,15 @@ platform as github or gitlab you can set it. Every change after commit
 will be pushed automatically.
 
 - `todo remote [remote-repository]`
-  - Example: `todo remove git@github.com:espinosajuanma/todo.git`
+  - Example: `todo remote git@github.com:espinosajuanma/todo.git`
 
 ### CRUD Actions
 
-- `todo add <title>` - Create a task and open the editor
-- `todo edit [id]` - Open the editor to edit a task body
-- `todo show [id]` - Open the editor to edit a task
+- `todo add <title>` - Creates a task and open the editor
+- `todo edit [id]` - Opens the editor to edit a task body
+- `todo show [id]` - Opens the pager to view a task
   - Alias: `view`
-- `todo remove [id]` - Remove definitely a task
+- `todo remove [id]` - Removes definitely a task
   - Alias: `rm`
   - Recommendation use: `archive` instead
   - Use only for maintenance purposes
@@ -56,12 +56,12 @@ will be pushed automatically.
 Transitions commands allows you to move one task from one status to
 other.
 
-- `todo start [id]` - Move a task from `todo` to `working`
-- `todo pause [id]` - Move a task from `working` to `todo`
-- `todo finish [id]` - Move a task from `working` to `finished`
-- `todo restart [id]` - Move a task from `finished` to `todo`
-- `todo archive [id]` - Move a task from any status to `archived`
-- `todo recover [id]` - Move a task from `archived` to `todo`
+- `todo start [id]` - Moves a task from `todo` to `working`
+- `todo pause [id]` - Moves a task from `working` to `todo`
+- `todo finish [id]` - Moves a task from `working` to `finished`
+- `todo restart [id]` - Moves a task from `finished` to `todo`
+- `todo archive [id]` - Moves a task from any status to `archived`
+- `todo recover [id]` - Moves a task from `archived` to `todo`
 
 ### History
 
@@ -85,6 +85,11 @@ another name.
 ```bash
 ln -s /path/to/todo /path/to/new-todo
 ```
+
+### Tab completion
+
+Use `complete -C todo todo` or put it in your `.bashrc` file to allows
+tab completion.
 
 ## Future
 
