@@ -153,7 +153,7 @@ x.edit() {
   fi
 
   $EDITOR "$file"
-  title="$(head -n 1 "$file" | sed 's/^# //')"
+  title="$(_get_title $file)"
   git -C "$TODO_PATH" add "$file"
   _commit "Update: $title"
 }
@@ -189,6 +189,7 @@ x.start() {
   title="$(_get_title $file)"
   git -C "$TODO_PATH" mv "$file" "$TODO_PATH/working/"
   _commit "Start: $title"
+  x.list.working
 }
 
 x.pause() {
@@ -197,6 +198,7 @@ x.pause() {
   title="$(_get_title $file)"
   git -C "$TODO_PATH" mv "$file" "$TODO_PATH/todo/"
   _commit "Pause: $title"
+  x.list.todo
 }
 
 x.finish() {
@@ -205,6 +207,7 @@ x.finish() {
   title="$(_get_title $file)"
   git -C "$TODO_PATH" mv "$file" "$TODO_PATH/finished/"
   _commit "Finish: $title"
+  x.list.finished
 }
 
 x.restart() {
@@ -213,6 +216,7 @@ x.restart() {
   title="$(_get_title $file)"
   git -C "$TODO_PATH" mv "$file" "$TODO_PATH/todo/"
   _commit "Restart: $title"
+  x.list.todo
 }
 
 x.recover() {
@@ -221,6 +225,7 @@ x.recover() {
   title="$(_get_title $file)"
   git -C "$TODO_PATH" mv "$file" "$TODO_PATH/todo/"
   _commit "Recover: $title"
+  x.list.todo
 }
 
 x.log() { git -C "$TODO_PATH" log; }
@@ -247,7 +252,7 @@ x.push() {
 _commit() {
   git -C "$TODO_PATH" commit -qm "$1"
   if [[ ! -z "$REMOTE" ]]; then
-    git -C "$TODO_PATH" -q push
+    git -C "$TODO_PATH" push -q
   fi
 }
 
