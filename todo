@@ -24,6 +24,7 @@ declare reset="\e[0m"
 
 _initialize() {
   REMOTE="$(x.config remote)"
+  echo $REMOTE
   TODO_PATH="$(x.config.dir)/tasks"
 
   CATEGORIES=("todo" "working" "finished" "archived")
@@ -53,13 +54,16 @@ _alternatives() {
   fi
 }
 
-HELP[list]='Returns a list of task to do'
+HELP[list]='Returns a list of todo, working and finished tasks'
 
 x.list() {
   x.list.todo
   x.list.working
   x.list.finished
 }
+
+
+HELP[list.todo]='Returns a list of todo tasks'
 
 x.list.todo() {
   if [[ "$(ls -A $TODO_PATH/todo)" ]]; then
@@ -69,6 +73,9 @@ x.list.todo() {
   fi
 }
 
+
+HELP[list.working]='Returns a list of working tasks'
+
 x.list.working() {
   if [[ "$(ls -A $TODO_PATH/working)" ]]; then
     printf "\e[32;1mWORKING\e[0m\n\n"
@@ -76,6 +83,8 @@ x.list.working() {
     printf "\n"
   fi
 }
+
+HELP[list.finished]='Returns a list of finished tasks'
 
 x.list.finished() {
   if [[ "$(ls -A $TODO_PATH/finished)" ]]; then
@@ -85,6 +94,8 @@ x.list.finished() {
   fi
 }
 
+HELP[list.archived]='Returns a list of archived tasks'
+
 x.list.archived() {
   if [[ "$(ls -A $TODO_PATH/archived)" ]]; then
     printf "\e[31;1mARCHIVED\e[0m\n\n"
@@ -93,7 +104,7 @@ x.list.archived() {
   fi
 }
 
-HELP[add]='Returns a list of task to do'
+HELP[add]='Creates a task and open it in the editor'
 
 x.add() {
   # Create new markdown file with unique name
@@ -107,6 +118,10 @@ x.add() {
   git -C "$TODO_PATH" add "$TODO_PATH/todo/$filename"
   git -C "$TODO_PATH" commit -m "$title"
 }
+
+HELP[remove]='Removes a task
+
+Use only for maintenance purposes'
 
 x.remove() {
   if [[ -z "$1" ]]; then
@@ -131,6 +146,8 @@ x.remove() {
   fi
 }
 
+HELP[show]='Opens a task in the pager'
+
 x.show() {
   if [[ -z "$1" ]]; then
     echo "Error: task not specified" && exit 1
@@ -142,6 +159,8 @@ x.show() {
 
   $PAGER "$file"
 }
+
+HELP[edit]='Opens a task in the editor'
 
 x.edit() {
   if [[ -z "$1" ]]; then
@@ -159,6 +178,9 @@ x.edit() {
 }
 
 # TRANSITIONS
+
+
+HELP[archive]='Moves a task from any status to archived'
 
 x.archive() {
   if [[ -z "$1" ]]; then
@@ -183,6 +205,9 @@ x.archive() {
   fi
 }
 
+
+HELP[start]='Moves a task from todo to working'
+
 x.start() {
   _check_file "todo" "$1"
   file="$TODO_PATH/todo/$1.md"
@@ -191,6 +216,8 @@ x.start() {
   _commit "Start: $title"
   x.list.working
 }
+
+HELP[pause]='Moves a task from working to todo'
 
 x.pause() {
   _check_file "working" "$1"
@@ -201,6 +228,8 @@ x.pause() {
   x.list.todo
 }
 
+HELP[finish]='Moves a task from working to finished'
+
 x.finish() {
   _check_file "working" "$1"
   file="$TODO_PATH/working/$1.md"
@@ -209,6 +238,8 @@ x.finish() {
   _commit "Finish: $title"
   x.list.finished
 }
+
+HELP[restart]='Moves a task from finished to todo'
 
 x.restart() {
   _check_file "finished" "$1"
@@ -219,6 +250,8 @@ x.restart() {
   x.list.todo
 }
 
+HELP[recover]='Moves a task from archived to todo'
+
 x.recover() {
   _check_file "archived" "$1"
   file="$TODO_PATH/archived/$1.md"
@@ -228,7 +261,11 @@ x.recover() {
   x.list.todo
 }
 
+HELP[log]='Check the git logs'
+
 x.log() { git -C "$TODO_PATH" log; }
+
+HELP[remote]='Configures remote repository'
 
 x.remote() {
   if [[ -z "$1" ]]; then
@@ -238,6 +275,8 @@ x.remote() {
   git -C "$TODO_PATH" remote add "origin" "$1"
   x.config remote "origin"
 }
+
+HELP[push]='Force a push to remote repository if is set'
 
 x.push() {
   if [[ -z "$REMOTE" ]]; then
@@ -252,7 +291,7 @@ x.push() {
 _commit() {
   git -C "$TODO_PATH" commit -qm "$1"
   if [[ ! -z "$REMOTE" ]]; then
-    git -C "$TODO_PATH" push -q
+    git -C "$TODO_PATH" push
   fi
 }
 
