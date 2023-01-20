@@ -110,10 +110,21 @@ HELP[add]='Creates a task and open it in the editor'
 x.add() {
   # Create new markdown file with unique name
   filename="$(_isosec).md"
-  echo "# $@" > "$TODO_PATH/todo/$filename"
+  title="$*"
+  if [[ -z "$title" ]]; then
+    read -p "Title: " title
+  fi
+  if [[ -z "$title" ]]; then
+    echo "Error: Title can't be empty"
+    exit 1
+  fi
+  echo "# $title" > "$TODO_PATH/todo/$filename"
 
-  # Open file in $EDITOR
-  $EDITOR "$TODO_PATH/todo/$filename"
+  read -p "Edit body? (y/N) " confirm
+  confirm="${confirm,,}"
+  if [[ "$confirm" =~ ^(yes|y)$ ]]; then
+    $EDITOR "$TODO_PATH/todo/$filename"
+  fi
 
   title="$(_get_title "$TODO_PATH/todo/$filename")"
   git -C "$TODO_PATH" add "$TODO_PATH/todo/$filename"
