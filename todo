@@ -24,7 +24,6 @@ declare reset="\e[0m"
 
 _initialize() {
   REMOTE="$(x.config remote)"
-  echo $REMOTE
   TODO_PATH="$(x.config.dir)/tasks"
 
   CATEGORIES=("todo" "working" "finished" "archived")
@@ -273,7 +272,7 @@ x.remote() {
     exit 1
   fi
   git -C "$TODO_PATH" remote add "origin" "$1"
-  x.config remote "origin"
+  x.config remote "$1"
 }
 
 HELP[push]='Force a push to remote repository if is set'
