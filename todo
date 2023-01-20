@@ -40,6 +40,8 @@ _alternatives() {
     x.list
   elif [[ "$CMD" == "rm" ]]; then
     x.remove "$@"
+  elif [[ "$CMD" == "ed" || "$CMD" == "e" ]]; then
+    x.edit "$@"
   elif [[ "$CMD" == "view" ]]; then
     x.show "$@"
   elif [[ "$CMD" == "todo" ]]; then
