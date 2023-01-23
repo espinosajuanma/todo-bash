@@ -37,30 +37,41 @@ _initialize() {
 _alternatives() {
   # put alternative argument possibilities here
   if [[ -z "$CMD" || "$CMD" == "ls" ]];then
-    x.list
+    x.list "$@"
+  elif [[ "$CMD" == "end" ]]; then
+    x.finish "$@"
   elif [[ "$CMD" == "rm" ]]; then
     x.remove "$@"
   elif [[ "$CMD" == "ed" || "$CMD" == "e" ]]; then
     x.edit "$@"
   elif [[ "$CMD" == "view" ]]; then
     x.show "$@"
-  elif [[ "$CMD" == "todo" ]]; then
-    x.list.todo
-  elif [[ "$CMD" == "working" ]]; then
-    x.list.working
-  elif [[ "$CMD" == "finished" ]]; then
-    x.list.finished
-  elif [[ "$CMD" == "archived" ]]; then
-    x.list.archived
+  elif [[ ! -z "$CMD" ]]; then
+    if [[ " ${CATEGORIES[@]} " =~ " $CMD " ]]; then
+      "x.list.$CMD"
+      exit
+    fi
   fi
 }
 
 HELP[list]='Returns a list of todo, working and finished tasks'
 
 x.list() {
-  x.list.todo
-  x.list.working
-  x.list.finished
+  if [[ ! -z "$1" ]]; then
+    if [[ " ${CATEGORIES[@]} " =~ " $1 " ]]; then
+      "x.list.$1"
+      exit
+    else
+      echo "Error: category $1 doesn't exist"
+      exit 1
+    fi
+  fi
+
+  for category in "${CATEGORIES[@]}"; do
+    if [[ "$category" != "archived" ]]; then
+      "x.list.$category"
+    fi
+  done
 }
 
 
