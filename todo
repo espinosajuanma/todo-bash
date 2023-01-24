@@ -22,9 +22,17 @@ declare cyan="\e[36m"
 declare white="\e[37m"
 declare reset="\e[0m"
 
+declare -A ERROR_MAP
+ERROR_MAP=(
+  ["notFound"]="Error: task not found"
+  ["emptyId"]="Error: task id not specified"
+  ["emptyTytle"]="Error: title can't be empty"
+)
+
 _initialize() {
   REMOTE="$(x.config remote)"
   TODO_PATH="$(x.config.dir)/tasks"
+  LAST="$(x.config last)"
 
   CATEGORIES=("todo" "working" "finished" "archived")
   _create_dirs
@@ -119,16 +127,13 @@ x.list.archived() {
 HELP[add]='Creates a task and open it in the editor'
 
 x.add() {
-  # Create new markdown file with unique name
-  filename="$(_isosec).md"
+  id="$(_isosec)"
+  filename="$id.md"
   title="$*"
   if [[ -z "$title" ]]; then
     read -p "Title: " title
   fi
-  if [[ -z "$title" ]]; then
-    echo "Error: Title can't be empty"
-    exit 1
-  fi
+  _required "$title" "${ERROR_MAP[titleEmpty]}"
   echo "# $title" > "$TODO_PATH/todo/$filename"
 
   read -p "Edit body? (y/N) " confirm
@@ -140,6 +145,7 @@ x.add() {
   title="$(_get_title "$TODO_PATH/todo/$filename")"
   git -C "$TODO_PATH" add "$TODO_PATH/todo/$filename"
   git -C "$TODO_PATH" commit -m "$title"
+  x.config last "$id"
 }
 
 HELP[remove]='Removes a task
@@ -147,23 +153,18 @@ HELP[remove]='Removes a task
 Use only for maintenance purposes'
 
 x.remove() {
-  if [[ -z "$1" ]]; then
-    echo "Error: task not specified" && exit 1
-  fi
+  _required "$1" "${ERROR_MAP[emptyId]}"
   file="$(_find_task $1)"
-  if [[ -z "$file" ]]; then
-    echo "Error: task not found" && exit 1
-  fi
+  _required "$file" "${ERROR_MAP[notFound]}"
 
   title="$(_get_title $file)"
-  echo "$title"
 
-  # Ask user to confirm removal of task
   read -p "Are you sure you want to remove this task? (y/N) " confirm
   confirm="${confirm,,}"
   if [[ "$confirm" =~ ^(yes|y)$ ]]; then
     git -C "$TODO_PATH" rm "$file"
     _commit "Removed: $title" 
+    x.config last "$1"
   else
     echo "Task not removed"
   fi
@@ -172,13 +173,9 @@ x.remove() {
 HELP[show]='Opens a task in the pager'
 
 x.show() {
-  if [[ -z "$1" ]]; then
-    echo "Error: task not specified" && exit 1
-  fi
+  _required "$1" "${ERROR_MAP[emptyId]}"
   file="$(_find_task $1)"
-  if [[ -z "$file" ]]; then
-    echo "Error: task not found" && exit 1
-  fi
+  _required "$file" "${ERROR_MAP[notFound]}"
 
   $PAGER "$file"
 }
@@ -186,33 +183,25 @@ x.show() {
 HELP[edit]='Opens a task in the editor'
 
 x.edit() {
-  if [[ -z "$1" ]]; then
-    echo "Error: task not specified" && exit 1
-  fi
+  _required "$1" "${ERROR_MAP[emptyId]}"
   file="$(_find_task $1)"
-  if [[ -z "$file" ]]; then
-    echo "Error: task not found" && exit 1
-  fi
+  _required "$file" "${ERROR_MAP[notFound]}"
 
   $EDITOR "$file"
   title="$(_get_title $file)"
   git -C "$TODO_PATH" add "$file"
   _commit "Update: $title"
+  x.config last "$1"
 }
 
 # TRANSITIONS
 
-
 HELP[archive]='Moves a task from any status to archived'
 
 x.archive() {
-  if [[ -z "$1" ]]; then
-    echo "Error: task not specified" && exit 1
-  fi
+  _required "$1" "${ERROR_MAP[emptyId]}"
   file="$(_find_task $1)"
-  if [[ -z "$file" ]]; then
-    echo "Error: task not found" && exit 1
-  fi
+  _required "$file" "${ERROR_MAP[notFound]}"
 
   title="$(_get_title $file)"
   echo "$title"
@@ -223,11 +212,11 @@ x.archive() {
   if [[ "$confirm" =~ ^(yes|y)$ ]]; then
     git -C "$TODO_PATH" mv "$file" "$TODO_PATH/archived/$1.md"
     _commit "Archived: $title"
+    x.config last "$1"
   else
     echo "Task not archived"
   fi
 }
-
 
 HELP[start]='Moves a task from todo to working'
 
@@ -237,6 +226,7 @@ x.start() {
   title="$(_get_title $file)"
   git -C "$TODO_PATH" mv "$file" "$TODO_PATH/working/"
   _commit "Start: $title"
+  x.config last "$1"
   x.list.working
 }
 
@@ -248,6 +238,7 @@ x.pause() {
   title="$(_get_title $file)"
   git -C "$TODO_PATH" mv "$file" "$TODO_PATH/todo/"
   _commit "Pause: $title"
+  x.config last "$1"
   x.list.todo
 }
 
@@ -259,6 +250,7 @@ x.finish() {
   title="$(_get_title $file)"
   git -C "$TODO_PATH" mv "$file" "$TODO_PATH/finished/"
   _commit "Finish: $title"
+  x.config last "$1"
   x.list.finished
 }
 
@@ -270,6 +262,7 @@ x.restart() {
   title="$(_get_title $file)"
   git -C "$TODO_PATH" mv "$file" "$TODO_PATH/todo/"
   _commit "Restart: $title"
+  x.config last "$1"
   x.list.todo
 }
 
@@ -281,7 +274,16 @@ x.recover() {
   title="$(_get_title $file)"
   git -C "$TODO_PATH" mv "$file" "$TODO_PATH/todo/"
   _commit "Recover: $title"
+  x.config last "$1"
   x.list.todo
+}
+
+HELP[last]='Returns latest task manipulated'
+
+x.last() {
+  file="$(_find_task $LAST)"
+  _required "$file" "${ERROR_MAP[notFound]}"
+  _print_item "$file"
 }
 
 HELP[log]='Check the git logs'
@@ -292,8 +294,8 @@ HELP[remote]='Configures remote repository'
 
 x.remote() {
   if [[ -z "$1" ]]; then
-    echo "Error: Remote can't be empty"
-    exit 1
+    x.remote
+    exit
   fi
   git -C "$TODO_PATH" remote add "origin" "$1"
   x.config remote "$1"
@@ -323,33 +325,51 @@ _isosec() {
 }
 
 _check_file() {
-  if [[ -z "$2" ]]; then
-    echo "Error: no task specified"
-    return 1
-  fi
-  if [[ ! -e "$TODO_PATH/$1/$2.md" ]]; then
+  cat="$1"
+  id="$(_parse_id $2)"
+  if [[ ! -e "$TODO_PATH/$cat/$id.md" ]]; then
     echo "Error: task doesn't exist"
     return 1
   fi
 }
 
 _find_task() {
+  id="$(_parse_id $1)"
   for category in "${CATEGORIES[@]}"; do
-    if [[ -e "$TODO_PATH/$category/$1.md" ]]; then
-      echo "$TODO_PATH/$category/$1.md"
-      return 0
+    if [[ -e "$TODO_PATH/$category/$id.md" ]]; then
+      echo "$TODO_PATH/$category/$id.md"
+      exit
     fi
   done
-  echo ""
+}
+
+_parse_id() {
+  id="$1"
+  if [[ "$id" == "last" ]]; then
+    id="$LAST"
+  fi
+  echo "$id"
+}
+
+_required() {
+  if [[ -z "$1" ]]; then
+    echo "$2"
+    exit 1
+  fi
 }
 
 _print_items() {
   for file in $TODO_PATH/$1/*; do
-    title="$(_get_title $file)"
-    uuid="${file##*/}"
-    uuid="${uuid%.*}"
-    echo "  [$uuid] $title"
+    _print_item "$file"
   done
+}
+
+_print_item() {
+  file="$1"
+  title="$(_get_title $file)"
+  uuid="${file##*/}"
+  uuid="${uuid%.*}"
+  echo "  [$uuid] $title"
 }
 
 _get_title() {
