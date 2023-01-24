@@ -33,6 +33,11 @@ _initialize() {
   REMOTE="$(x.config remote)"
   TODO_PATH="$(x.config.dir)/tasks"
   LAST="$(x.config last)"
+  PREFIX="$(x.config prefix)"
+  if [[ -z "$PREFIX" ]]; then
+    x.config prefix "\e[32;1m"
+    PREFIX="\e[32;1m"
+  fi
 
   CATEGORIES=("todo" "working" "finished" "archived")
   _create_dirs
@@ -54,6 +59,8 @@ _alternatives() {
     x.edit "$@"
   elif [[ "$CMD" == "view" ]]; then
     x.show "$@"
+  elif [[ "$CMD" == "prefix" ]]; then
+    x.config prefix "$@"
   elif [[ ! -z "$CMD" ]]; then
     if [[ " ${CATEGORIES[@]} " =~ " $CMD " ]]; then
       "x.list.$CMD"
@@ -82,23 +89,21 @@ x.list() {
   done
 }
 
-
 HELP[list.todo]='Returns a list of todo tasks'
 
 x.list.todo() {
   if [[ "$(ls -A $TODO_PATH/todo)" ]]; then
-    printf "\e[32;1mTO DO\e[0m\n\n"
+    printf "${PREFIX}TO DO\e[0m\n\n"
     _print_items "todo"
     printf "\n"
   fi
 }
 
-
 HELP[list.working]='Returns a list of working tasks'
 
 x.list.working() {
   if [[ "$(ls -A $TODO_PATH/working)" ]]; then
-    printf "\e[32;1mWORKING\e[0m\n\n"
+    printf "${PREFIX}WORKING\e[0m\n\n"
     _print_items "working"
     printf "\n"
   fi
@@ -108,7 +113,7 @@ HELP[list.finished]='Returns a list of finished tasks'
 
 x.list.finished() {
   if [[ "$(ls -A $TODO_PATH/finished)" ]]; then
-    printf "\e[32;1mFINISHED\e[0m\n\n"
+    printf "${PREFIX}FINISHED\e[0m\n\n"
     _print_items "finished"
     printf "\n"
   fi
