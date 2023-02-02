@@ -150,6 +150,15 @@ x.add() {
   title="$(_get_title "$TODO_PATH/todo/$filename")"
   git -C "$TODO_PATH" add "$TODO_PATH/todo/$filename"
   git -C "$TODO_PATH" commit -m "$title"
+
+  read -p "Start task? (y/N) " confirm
+  confirm="${confirm,,}"
+  if [[ "$confirm" =~ ^(yes|y)$ ]]; then
+    x.start "$id"
+  else
+    x.list.todo
+  fi
+
   x.config last "$id"
 }
 
