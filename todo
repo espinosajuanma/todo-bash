@@ -43,7 +43,7 @@ _initialize() {
   _create_dirs
 
   if [[ ! -d "$TODO_PATH/.git" ]]; then
-    git -C "$TODO_PATH" init "$TODO_PATH" > /dev/null
+    git -C "$TODO_PATH" init "$TODO_PATH" -b main > /dev/null
   fi
 }
 
@@ -68,6 +68,14 @@ _alternatives() {
     fi
   fi
 }
+
+
+HELP[path]='Returns path of tasks repository'
+
+x.path() {
+  echo "$TODO_PATH"
+}
+
 
 HELP[list]='Returns a list of todo, working and finished tasks'
 
@@ -132,6 +140,7 @@ x.list.archived() {
 HELP[add]='Creates a task and open it in the editor'
 
 x.add() {
+  _is_updated
   id="$(_isosec)"
   filename="$id.md"
   title="$*"
@@ -167,6 +176,7 @@ HELP[remove]='Removes a task
 Use only for maintenance purposes'
 
 x.remove() {
+  _is_updated
   _required "$1" "${ERROR_MAP[emptyId]}"
   file="$(_find_task $1)"
   _required "$file" "${ERROR_MAP[notFound]}"
@@ -197,6 +207,7 @@ x.show() {
 HELP[edit]='Opens a task in the editor'
 
 x.edit() {
+  _is_updated
   _required "$1" "${ERROR_MAP[emptyId]}"
   file="$(_find_task $1)"
   _required "$file" "${ERROR_MAP[notFound]}"
@@ -213,6 +224,7 @@ x.edit() {
 HELP[archive]='Moves a task from any status to archived'
 
 x.archive() {
+  _is_updated
   _required "$1" "${ERROR_MAP[emptyId]}"
   file="$(_find_task $1)"
   _required "$file" "${ERROR_MAP[notFound]}"
@@ -235,6 +247,7 @@ x.archive() {
 HELP[start]='Moves a task from todo to working'
 
 x.start() {
+  _is_updated
   _check_file "todo" "$1"
   file="$TODO_PATH/todo/$1.md"
   title="$(_get_title $file)"
@@ -247,6 +260,7 @@ x.start() {
 HELP[pause]='Moves a task from working to todo'
 
 x.pause() {
+  _is_updated
   _check_file "working" "$1"
   file="$TODO_PATH/working/$1.md"
   title="$(_get_title $file)"
@@ -259,6 +273,7 @@ x.pause() {
 HELP[finish]='Moves a task from working to finished'
 
 x.finish() {
+  _is_updated
   _check_file "working" "$1"
   file="$TODO_PATH/working/$1.md"
   title="$(_get_title $file)"
@@ -271,6 +286,7 @@ x.finish() {
 HELP[restart]='Moves a task from finished to todo'
 
 x.restart() {
+  _is_updated
   _check_file "finished" "$1"
   file="$TODO_PATH/finished/$1.md"
   title="$(_get_title $file)"
@@ -283,6 +299,7 @@ x.restart() {
 HELP[recover]='Moves a task from archived to todo'
 
 x.recover() {
+  _is_updated
   _check_file "archived" "$1"
   file="$TODO_PATH/archived/$1.md"
   title="$(_get_title $file)"
@@ -396,6 +413,18 @@ _create_dirs() {
       mkdir -p "$TODO_PATH/$category"
     fi
   done
+}
+
+_is_updated() {
+  REMOTE="$(x.config remote)"
+  if [[ ! -z "$REMOTE" ]]; then
+    git -C "$TODO_PATH" remote update > /dev/null
+    if ! git -C "$TODO_PATH" merge-base --is-ancestor origin/main main; then
+      git -C "$TODO_PATH" pull
+      echo "Remote synced. Try again"
+      exit 1
+    fi
+  fi
 }
 
 ############################## BOILERPLATE ###########################
