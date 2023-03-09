@@ -404,7 +404,7 @@ _print_item() {
 }
 
 _get_title() {
-  echo "$(head -n 1 $1 | sed 's/^# //')"
+  echo "$(head -n 1 $1 | sed -E 's/^# (.*)/\1/' | sed -E 's/`([^`]+)`/\o033[35m\1\o033[0m/g')"
 }
 
 _create_dirs() {
